@@ -6,6 +6,8 @@ Projenin kaynak kodları size ait GitHub deposundadır: [ahmetbltnn-web/komagene
 
 ## Kurulum ve çalıştırma
 
+Windows'ta ZIP'e sağ tıklayıp **Tümünü Ayıkla** seçeneğini kullanın. Çıkarılan dosyalardaki **BASLAT.cmd** dosyasına çift tıklayın. Bu dosya proje klasörünü kendisi seçer, Node.js ve kilit dosyasını kontrol eder, bağımlılıkları kurup uygulamayı başlatır. Node.js LTS önceden kurulu olmalıdır. Dosyayı sıkıştırılmış ZIP'in içinden çalıştırmayın. İlk kurulum internet gerektirir; pencereyi açık tutun ve terminaldeki `Local` adresini tarayıcınızda açın.
+
 Node.js 20.19+ veya 22+ ve npm gerekir. GitHub'dan ZIP dosyasını indirin, çıkartın ve `package.json` dosyasının bulunduğu proje klasöründe terminal açın:
 
 ```bash
