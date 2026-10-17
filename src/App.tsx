@@ -231,6 +231,9 @@ function App() {
   const [storageError, setStorageError] = useState("");
   const [restoreCandidate, setRestoreCandidate] =
     useState<FinanceBackupData | null>(null);
+  const [resetRequested, setResetRequested] = useState(false);
+  const [resetConfirmed, setResetConfirmed] = useState(false);
+  const [resetError, setResetError] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [modal, setModal] = useState<Modal>(null);
   const [detail, setDetail] = useState<
@@ -349,6 +352,9 @@ function App() {
   const openModal = (next: Modal) => {
     setFormError("");
     setRestoreCandidate(null);
+    setResetRequested(false);
+    setResetConfirmed(false);
+    setResetError("");
     if (next === "transaction" && !accounts.length) {
       setModal("account");
       setToast("İşlem kaydetmeden önce ilk banka hesabınızı ekleyin.");
@@ -452,6 +458,8 @@ function App() {
   }
 
   async function readBackupFile(file: File) {
+    setResetRequested(false);
+    setResetConfirmed(false);
     setRestoreCandidate(null);
     setFormError("");
     try {
@@ -516,6 +524,45 @@ function App() {
     setModal(null);
     setToast(
       "Örnek kayıtlar yüklendi. Bu veriler gerçek finansal bilgileriniz değildir.",
+    );
+  }
+
+  function resetFinancialRecords() {
+    if (!resetConfirmed) return;
+    setResetError("");
+    const cleared: FinanceBackupData = {
+      ...backupData(),
+      transactions: [],
+      accounts: [],
+      contacts: [],
+      dueItems: [],
+    };
+    try {
+      downloadFile(
+        exportBackup(backupData()),
+        `${profile.appName.replace(/[^\p{L}\p{N}]+/gu, "-")}-sifirlama-oncesi-${today}.json`,
+        "application/json",
+      );
+      persistFinanceState(cleared);
+    } catch {
+      setResetError(
+        "Sıfırlama kaydedilemedi. Mevcut kayıtlarınız değiştirilmedi; tarayıcının depolama ve indirme izinlerini kontrol edin.",
+      );
+      return;
+    }
+    setTransactions([]);
+    setAccounts([]);
+    setContacts([]);
+    setDueItems([]);
+    setResetRequested(false);
+    setResetConfirmed(false);
+    setRestoreCandidate(null);
+    setModal(null);
+    setMonth(Number(today.slice(5, 7)));
+    setYear(Number(today.slice(0, 4)));
+    navigate("overview");
+    setToast(
+      "Finansal kayıtlar sıfırlandı. Firma ve profil bilgileriniz korundu; önceki kayıtlarınız JSON olarak indirildi.",
     );
   }
 
@@ -2512,6 +2559,89 @@ function App() {
                     </p>
                   )}
                 </section>
+                {(transactions.length > 0 ||
+                  accounts.length > 0 ||
+                  contacts.length > 0 ||
+                  dueItems.length > 0) && (
+                  <section
+                    className="reset-section"
+                    aria-label="Kayıtları sıfırlama"
+                  >
+                    <h3>Temiz başlangıç</h3>
+                    <p>
+                      Örnek verilerle başladınız ve kendi kayıtlarınıza geçmek
+                      istiyorsanız finansal kayıtları sıfırlayabilirsiniz. Firma
+                      ve profil bilgileriniz korunur.
+                    </p>
+                    {!resetRequested ? (
+                      <button
+                        type="button"
+                        className="button button-danger"
+                        onClick={() => {
+                          setResetRequested(true);
+                          setResetConfirmed(false);
+                          setResetError("");
+                          setRestoreCandidate(null);
+                        }}
+                      >
+                        Kayıtları sıfırla
+                      </button>
+                    ) : (
+                      <div className="reset-preview">
+                        <strong>Silinecek finansal kayıtlar</strong>
+                        <p>
+                          {transactions.length} işlem · {accounts.length} banka
+                          hesabı · {contacts.length} cari hesap ·{" "}
+                          {dueItems.length} planlı işlem
+                        </p>
+                        <p>
+                          Bu işlem örnek verilerle birlikte eklediğiniz gerçek
+                          finansal kayıtları da temizler. İşlemden önce mevcut
+                          kayıtlarınız JSON yedeği olarak indirilir.
+                        </p>
+                        <label className="reset-confirmation">
+                          <input
+                            type="checkbox"
+                            checked={resetConfirmed}
+                            onChange={(e) =>
+                              setResetConfirmed(e.target.checked)
+                            }
+                          />
+                          <span>
+                            Örnek ve gerçek tüm finansal kayıtların silineceğini
+                            anladım.
+                          </span>
+                        </label>
+                        {resetError && (
+                          <p className="form-error" role="alert">
+                            {resetError}
+                          </p>
+                        )}
+                        <div className="reset-actions">
+                          <button
+                            type="button"
+                            className="button button-secondary"
+                            onClick={() => {
+                              setResetRequested(false);
+                              setResetConfirmed(false);
+                              setResetError("");
+                            }}
+                          >
+                            Sıfırlamadan vazgeç
+                          </button>
+                          <button
+                            type="button"
+                            className="button button-danger"
+                            disabled={!resetConfirmed}
+                            onClick={resetFinancialRecords}
+                          >
+                            Yedekle ve sıfırla
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </section>
+                )}
                 {!transactions.length &&
                   !accounts.length &&
                   !contacts.length &&
@@ -2562,6 +2692,10 @@ function App() {
                   [
                     "Raporlarımı nasıl dışa aktarırım?",
                     "Raporlar sayfasında istediğiniz ayı seçin ve “Raporu indir” düğmesine tıklayın. CSV dosyasını Excel veya Google E-Tablolar ile açabilirsiniz.",
+                  ],
+                  [
+                    "Örnek verileri nasıl sıfırlarım?",
+                    "Ayarlar bölümünde Temiz başlangıç → Kayıtları sıfırla seçeneğini açın. Silinecek kayıtları inceleyip kutuyu işaretleyin ve Yedekle ve sıfırla düğmesine basın. Bu işlem gerçek kayıtlar dahil tüm finansal verileri temizler; firma ve profil bilgileri korunur. Önceki kayıtlarınız JSON dosyası olarak indirilir.",
                   ],
                   [
                     "Verilerim nerede saklanıyor?",

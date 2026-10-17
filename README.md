@@ -47,6 +47,8 @@ Kayıtlar `mhans-finans-` önekiyle kullandığınız tarayıcının `localStora
 
 JSON yedeği banka hesaplarını, gelir ve gider işlemlerini, cari hesapları, planlı ödeme ve tahsilatları, firma adını ve kullanıcı profilini içerir. Geri yükleme sırasında dosyanın biçimi ve kayıtları doğrulanır; kayıt sayıları önizlemede gösterilir. Onayladığınızda yedek mevcut verilerin yerini alır. Mevcut verileriniz varsa değiştirilmeden önce ayrı bir JSON yedeği olarak indirilir. Yedeği başka bir tarayıcıda geri yükleyerek kayıtlarınızı taşıyabilirsiniz.
 
+Örnek kayıtlarla denemeyi bitirdiğinizde **Ayarlar → Temiz başlangıç → Kayıtları sıfırla** yolunu kullanın. Silinecek kayıt sayıları gösterilir; kutuyu işaretleyip **Yedekle ve sıfırla** düğmesine basınca önce JSON yedeği indirilir, ardından tüm finansal kayıtlar temizlenir. Bu işlem eklediğiniz gerçek finansal kayıtları da kapsar. Firma, uygulama ve kullanıcı adları korunur. Depolamaya yazılamazsa sıfırlama uygulanmaz. Gerekirse indirdiğiniz yedeği aynı Ayarlar bölümünden geri yükleyebilirsiniz.
+
 ## Bağımsız kullanım ve kapsam
 
 Uygulamayı çalıştırmak için sağlayıcı hesabı, abonelik, gizli anahtar veya uzak API gerekmez. İlk bağımlılık kurulumu internet bağlantısı gerektirir; ikonlar ve yazı tipleri uygulamayla birlikte sunulur.

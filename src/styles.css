@@ -4554,3 +4554,84 @@ tbody tr:last-child td {
     margin-left: 32px;
   }
 }
+
+.reset-section {
+  border-top: 1px solid #eee5df;
+  margin-top: 23px;
+  padding-top: 20px;
+}
+.reset-section h3 {
+  font-size: 13px;
+  font-weight: 550;
+  color: #9c7563;
+}
+.reset-section > p,
+.reset-preview > p {
+  font-size: 10px;
+  line-height: 1.8;
+  color: #a89990;
+  margin-top: 8px;
+}
+.reset-section > .button {
+  margin-top: 13px;
+}
+.reset-preview {
+  border: 1px solid #f0ded5;
+  border-radius: 8px;
+  background: #fdf8f5;
+  padding: 15px;
+  margin-top: 14px;
+}
+.reset-preview > strong {
+  font-size: 11px;
+  font-weight: 550;
+  color: #af806c;
+}
+.reset-confirmation {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  font-size: 10px;
+  line-height: 1.8;
+  color: #9e7c69;
+  margin-top: 15px;
+  cursor: pointer;
+}
+.reset-confirmation input {
+  accent-color: #b77c65;
+  margin: 3px 0 0;
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+}
+.reset-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 17px;
+}
+.reset-actions .button {
+  font-size: 10px;
+}
+.reset-actions .button:disabled {
+  opacity: 0.45;
+  box-shadow: none;
+}
+.reset-preview .form-error {
+  font-size: 10px;
+  margin-top: 13px;
+  padding: 0;
+}
+@media (max-width: 650px) {
+  .reset-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .reset-actions .button {
+    font-size: 11px;
+  }
+  .reset-confirmation {
+    font-size: 11px;
+  }
+}
