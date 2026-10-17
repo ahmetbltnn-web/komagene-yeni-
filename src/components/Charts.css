@@ -1,0 +1,84 @@
+.chart-cash-flow {
+  width: 100%;
+  min-width: 0;
+}
+.chart-line-svg {
+  width: 100%;
+  height: auto;
+  display: block;
+  overflow: visible;
+}
+.chart-grid-line {
+  stroke: #edf1ef;
+  stroke-width: 1;
+  stroke-dasharray: 3 4;
+}
+.chart-axis-label {
+  fill: #98a19e;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 400;
+}
+.chart-line-svg-compact .chart-axis-label {
+  font-size: 13px;
+}
+.chart-hit-area {
+  cursor: crosshair;
+  outline: none;
+}
+.chart-hit-area:focus-visible {
+  stroke: #9ed9cb;
+  stroke-width: 1;
+  stroke-dasharray: 3 4;
+}
+.chart-tooltip-date {
+  fill: #3a4943;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 600;
+}
+.chart-tooltip-label {
+  fill: #84918b;
+  font-family: inherit;
+  font-size: 10px;
+}
+.chart-tooltip-value {
+  fill: #32443a;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 600;
+}
+.chart-line-svg-compact .chart-tooltip-date,
+.chart-line-svg-compact .chart-tooltip-value {
+  font-size: 13px;
+}
+.chart-line-svg-compact .chart-tooltip-label {
+  font-size: 12px;
+}
+.chart-tooltip-box {
+  filter: drop-shadow(0 3px 7px rgb(21 47 36 / 7%));
+}
+.chart-donut-svg {
+  display: block;
+  width: 160px;
+  max-width: 100%;
+  height: auto;
+  flex-shrink: 0;
+}
+.chart-donut-label {
+  fill: #97a19a;
+  font-family: inherit;
+  font-size: 10px;
+}
+.chart-donut-total {
+  fill: #25362d;
+  font-family: inherit;
+  font-size: 18px;
+  font-weight: 650;
+  letter-spacing: -0.65px;
+}
+@media (max-width: 560px) {
+  .chart-donut-svg {
+    width: 148px;
+  }
+}
