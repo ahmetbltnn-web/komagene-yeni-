@@ -301,7 +301,7 @@ svg {
   margin-top: auto;
   padding-top: 50px;
 }
-.pro-card {
+.ownership-card {
   position: relative;
   overflow: hidden;
   padding: 16px 14px 15px;
@@ -310,7 +310,7 @@ svg {
   background: linear-gradient(120deg, #f2f7f1, #edf5f0);
   margin-bottom: 22px;
 }
-.pro-icon {
+.ownership-icon {
   width: 31px;
   height: 31px;
   border: 1px solid #d8e8dc;
@@ -321,13 +321,13 @@ svg {
   border-radius: 8px;
   margin-bottom: 12px;
 }
-.pro-card h3 {
+.ownership-card h3 {
   font-size: 12px;
   font-weight: 650;
   position: relative;
   z-index: 1;
 }
-.pro-card p {
+.ownership-card p {
   font-size: 10.5px;
   line-height: 1.8;
   color: #8a978c;
@@ -335,7 +335,7 @@ svg {
   position: relative;
   z-index: 1;
 }
-.pro-card button {
+.ownership-card button {
   position: relative;
   z-index: 1;
   display: flex;
@@ -347,10 +347,10 @@ svg {
   padding: 0;
   margin-top: 15px;
 }
-.pro-card button:hover {
+.ownership-card button:hover {
   color: #0b7f62;
 }
-.pro-decoration {
+.ownership-decoration {
   position: absolute;
   right: -22px;
   top: -32px;
@@ -2242,63 +2242,6 @@ tbody tr:last-child td {
 .help-content > .button {
   margin-top: 15px;
 }
-.pro-modal-content {
-  text-align: center;
-}
-.pro-modal-icon {
-  display: grid;
-  place-items: center;
-  margin: 0 auto 20px;
-  width: 70px;
-  height: 70px;
-  border: 1px solid #e0edcf;
-  border-radius: 20px;
-  background: #f3f8eb;
-  color: #91b16c;
-}
-.pro-modal-content > p {
-  font-size: 12px;
-  color: #9eb18c;
-}
-.pro-modal-content ul {
-  list-style: none;
-  margin: 23px 0;
-  padding: 0;
-  text-align: left;
-  background: #f7faf3;
-  border: 1px solid #edf3e5;
-  border-radius: 8px;
-  padding: 14px 18px;
-}
-.pro-modal-content li {
-  font-size: 12px;
-  color: #92a77b;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 0;
-}
-.pro-modal-content li svg {
-  color: #8ab273;
-}
-.coming-soon {
-  font-size: 11px;
-  color: #93af7b;
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  background: #f0f7e8;
-  border: 1px solid #e3efda;
-  border-radius: 20px;
-  padding: 7px 12px;
-  margin-bottom: 15px;
-}
-.pro-modal-content > p.muted {
-  font-size: 11px;
-  line-height: 1.9;
-  margin-bottom: 20px;
-  color: #adbc9d;
-}
 .detail-hero {
   display: flex;
   flex-direction: column;
@@ -2821,17 +2764,17 @@ tbody tr:last-child td {
   .nav-label {
     font-size: 8px;
   }
-  .pro-card {
+  .ownership-card {
     padding-left: 12px;
     padding-right: 12px;
   }
-  .pro-card h3 {
+  .ownership-card h3 {
     font-size: 11px;
   }
-  .pro-card p {
+  .ownership-card p {
     font-size: 9px;
   }
-  .pro-card button {
+  .ownership-card button {
     font-size: 9px;
     gap: 5px;
   }
@@ -3138,7 +3081,7 @@ tbody tr:last-child td {
   .workspace-switch > svg,
   .nav-label,
   .nav-item > span,
-  .sidebar-bottom .pro-card,
+  .sidebar-bottom .ownership-card,
   .secondary-nav button > svg:last-child:not(:first-child),
   .secondary-nav button {
     font-size: 0;
@@ -3338,16 +3281,16 @@ tbody tr:last-child td {
   .sidebar-bottom {
     padding-top: 40px;
   }
-  .sidebar-bottom .pro-card {
+  .sidebar-bottom .ownership-card {
     display: block;
   }
-  .pro-card h3 {
+  .ownership-card h3 {
     font-size: 12px;
   }
-  .pro-card p {
+  .ownership-card p {
     font-size: 10.5px;
   }
-  .pro-card button {
+  .ownership-card button {
     font-size: 10.5px;
   }
   .secondary-nav button {
@@ -4194,5 +4137,420 @@ tbody tr:last-child td {
     animation: none !important;
     transition: none !important;
     scroll-behavior: auto !important;
+  }
+}
+
+/* M HANS GROUP — independent identity */
+:root {
+  --green: #4f67d8;
+  --green-dark: #3c52b5;
+  --border: #e8ecf3;
+  background: #f7f8fc;
+}
+.mhans-brand {
+  gap: 10px;
+  font-size: 17px;
+  letter-spacing: 0;
+  color: #1c2e50;
+}
+.mhans-symbol {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 38px;
+  background: #1c2e50;
+  border-radius: 9px;
+  color: #e5ebff;
+  box-shadow: 0 3px 8px #1c2e5012;
+}
+.mhans-brand .brand-wordmark {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 5px;
+}
+.brand-wordmark strong {
+  font-size: 15px;
+  line-height: 1.15;
+  letter-spacing: 0.3px;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 147px;
+}
+.brand-wordmark small {
+  font-size: 7px;
+  letter-spacing: 2px;
+  font-weight: 500;
+  color: #9aa6bf;
+}
+.nav-item.active {
+  background: #edf1fc;
+  color: #4c60c4;
+}
+.nav-item.active:before {
+  background: #4f67d8;
+}
+.nav-item:hover {
+  color: #4c60a8;
+  background: #f4f6fc;
+}
+.button-primary {
+  background: #4f67d8;
+  border-color: #4f67d8;
+  box-shadow: 0 2px 3px #243a8b12;
+}
+.button-primary:hover {
+  background: #3d55c4;
+  border-color: #3d55c4;
+  box-shadow: 0 3px 8px #3e55bf20;
+}
+.text-button {
+  color: #6474b2;
+}
+.text-button:hover {
+  color: #3e54b6;
+}
+.workspace-avatar,
+.topbar-avatar,
+.avatar {
+  color: #6275aa;
+  background: #eaf0fc;
+}
+.workspace-switch {
+  background: #fcfdff;
+}
+.workspace-switch:hover {
+  background: #f5f7fd;
+}
+.workspace-switch strong {
+  max-width: 130px;
+}
+.ownership-card {
+  background: linear-gradient(125deg, #f3f5fc, #edf1fa);
+  border-color: #e2e8f7;
+}
+.ownership-card h3 {
+  color: #596b9c;
+  font-size: 11px;
+}
+.ownership-card p {
+  color: #9aa5bf;
+  font-size: 9.5px;
+}
+.ownership-card button {
+  color: #667ab5;
+  gap: 6px;
+  font-size: 10px;
+}
+.ownership-icon {
+  color: #7186bd;
+  border-color: #dce3f4;
+}
+.ownership-decoration {
+  border-color: #e0e7f650;
+  box-shadow: 0 0 0 15px #e4eafb50;
+}
+.ownership-card button:hover {
+  color: #3d56b0;
+}
+.year-select select {
+  height: 37px;
+  border: 1px solid #e3eae6;
+  border-radius: 7px;
+  background: white;
+  font-size: 10px;
+  padding: 0 7px;
+  color: #71809d;
+  cursor: pointer;
+}
+.date-select select {
+  min-width: 65px;
+}
+.welcome-banner {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 25px;
+  margin-bottom: 23px;
+  border: 1px solid #dfe6f5;
+  border-radius: 12px;
+  background: linear-gradient(115deg, #eff3fc, #fafbff);
+}
+.welcome-monogram {
+  display: grid;
+  place-items: center;
+  background: #1c2e50;
+  color: #e1eaff;
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -1px;
+  width: 57px;
+  height: 59px;
+  border-radius: 14px;
+  flex-shrink: 0;
+}
+.welcome-banner > div:nth-child(2) {
+  flex: 1;
+}
+.welcome-banner > div > span {
+  color: #95a2c4;
+  font-size: 8px;
+  letter-spacing: 1.4px;
+}
+.welcome-banner h2 {
+  color: #3e527a;
+  font-size: 20px;
+  font-weight: 550;
+  margin-top: 8px;
+  letter-spacing: -0.4px;
+}
+.welcome-banner p {
+  color: #929fba;
+  font-size: 10px;
+  line-height: 1.8;
+  margin-top: 7px;
+  max-width: 550px;
+}
+.backup-section {
+  border-top: 1px solid #e9edf6;
+  padding-top: 20px;
+  margin-top: 20px;
+}
+.backup-section h3 {
+  font-size: 13px;
+  color: #63759f;
+  font-weight: 550;
+}
+.backup-section > p {
+  font-size: 10px;
+  color: #9ba7bf;
+  margin-top: 7px;
+  line-height: 1.7;
+}
+.backup-actions {
+  display: flex;
+  gap: 9px;
+  margin-top: 15px;
+}
+.backup-actions > .button {
+  font-size: 10px;
+  flex: 1;
+}
+.backup-section input[type="file"] {
+  position: fixed;
+  top: 0;
+  left: 0;
+}
+.restore-preview {
+  padding: 15px;
+  background: #f2f5fd;
+  border: 1px solid #e2e8f8;
+  border-radius: 8px;
+  margin-top: 16px;
+}
+.restore-preview > strong {
+  font-size: 11px;
+  color: #687caf;
+  font-weight: 550;
+}
+.restore-preview p {
+  font-size: 10px;
+  color: #98a5c2;
+  line-height: 1.8;
+  margin-top: 8px;
+}
+.restore-preview > div {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 14px;
+}
+.backup-section > .form-error {
+  font-size: 10px;
+  color: #bd7969;
+  margin-top: 14px;
+  padding: 0;
+}
+.example-data-option {
+  padding: 15px;
+  border: 1px dashed #e4e9f3;
+  border-radius: 7px;
+  margin-top: 20px;
+}
+.example-data-option p {
+  font-size: 10px;
+  color: #9faabf;
+  line-height: 1.7;
+}
+.example-data-option button {
+  margin-top: 7px;
+  font-size: 10px;
+}
+.settings-info {
+  color: #8fa0c3;
+  background: #f3f6fd;
+  border-color: #e7edf9;
+}
+.settings-info strong {
+  color: #8094bb;
+}
+.settings-info p {
+  color: #9eacc5;
+}
+.user-profile strong {
+  max-width: 120px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+@media (min-width: 651px) and (max-width: 850px) {
+  .mhans-brand .brand-wordmark {
+    display: none;
+  }
+  .brand-button {
+    padding: 0 7px;
+  }
+}
+@media (max-width: 1050px) {
+  .mhans-brand {
+    gap: 8px;
+  }
+  .mhans-symbol {
+    width: 32px;
+    height: 35px;
+  }
+  .brand-wordmark strong {
+    font-size: 11px;
+    max-width: 108px;
+  }
+  .brand-wordmark small {
+    font-size: 6px;
+    letter-spacing: 1.2px;
+  }
+  .welcome-banner {
+    padding: 20px;
+    gap: 15px;
+    flex-wrap: wrap;
+  }
+  .welcome-banner > .button {
+    margin-left: 72px;
+  }
+  .welcome-banner h2 {
+    font-size: 18px;
+  }
+}
+@media (max-width: 650px) {
+  .mhans-brand .brand-wordmark {
+    display: flex;
+  }
+  .mhans-brand {
+    gap: 10px;
+  }
+  .brand-wordmark strong {
+    font-size: 15px;
+    max-width: 147px;
+  }
+  .brand-wordmark small {
+    font-size: 7px;
+    letter-spacing: 2px;
+  }
+  .mhans-symbol {
+    width: 36px;
+    height: 38px;
+  }
+  .heading-actions {
+    gap: 7px;
+  }
+  .date-select select {
+    min-width: 65px;
+  }
+  .year-select select {
+    padding: 0 7px;
+    height: 37px;
+    font-size: 10px;
+  }
+  .heading-actions > .button {
+    margin-left: auto;
+  }
+  .welcome-banner {
+    padding: 20px 17px;
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+  .welcome-monogram {
+    width: 43px;
+    height: 46px;
+    font-size: 17px;
+    border-radius: 10px;
+    align-self: flex-start;
+  }
+  .welcome-banner > div:nth-child(2) {
+    flex: 1;
+    min-width: 180px;
+  }
+  .welcome-banner > div > span {
+    font-size: 6px;
+    letter-spacing: 1px;
+  }
+  .welcome-banner h2 {
+    font-size: 18px;
+    line-height: 1.5;
+    margin-top: 6px;
+  }
+  .welcome-banner p {
+    font-size: 9px;
+  }
+  .welcome-banner > .button {
+    margin-left: 57px;
+    font-size: 10px;
+  }
+  .ownership-card p {
+    font-size: 10px;
+  }
+  .ownership-card button {
+    font-size: 10px;
+  }
+  .backup-actions {
+    flex-direction: column;
+  }
+  .backup-actions > .button {
+    font-size: 11px;
+  }
+  .form-row:has(input[name="ownerName"]) {
+    flex-direction: column;
+    gap: 0;
+  }
+}
+.storage-error {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 17px;
+  margin-bottom: 22px;
+  border: 1px solid #f1dbbc;
+  background: #fff8ee;
+  border-radius: 8px;
+  color: #b28c59;
+}
+.storage-error p {
+  flex: 1;
+  font-size: 11px;
+  line-height: 1.8;
+}
+.storage-error > .button {
+  font-size: 10px;
+}
+@media (max-width: 650px) {
+  .storage-error {
+    flex-wrap: wrap;
+    padding: 15px;
+  }
+  .storage-error p {
+    font-size: 10px;
+    min-width: 230px;
+  }
+  .storage-error > .button {
+    margin-left: 32px;
   }
 }

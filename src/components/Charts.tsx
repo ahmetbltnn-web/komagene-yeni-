@@ -133,31 +133,49 @@ function transactionSeries(
   period: Period,
   transactions: ChartTransaction[],
   month: number,
+  year: number,
+  day: number,
 ) {
-  const selectedMonth = Math.max(1, Math.min(12, Math.trunc(month) || 10));
-  const lastDay = new Date(2026, selectedMonth, 0).getDate();
-  const days =
-    period === "week"
-      ? [11, 12, 13, 14, 15, 16, 17]
-      : [1, 5, 10, 15, 20, 25, lastDay];
-  const cutoffs =
+  const today = new Date();
+  const selectedYear = Number.isFinite(year)
+    ? Math.max(1000, Math.min(9999, Math.trunc(year)))
+    : today.getFullYear();
+  const selectedMonth = Number.isFinite(month)
+    ? Math.max(1, Math.min(12, Math.trunc(month)))
+    : today.getMonth() + 1;
+  const lastDay = new Date(selectedYear, selectedMonth, 0).getDate();
+  const selectedDay = Number.isFinite(day)
+    ? Math.max(1, Math.min(lastDay, Math.trunc(day)))
+    : Math.min(lastDay, today.getDate());
+  const formatDate = (date: Date) =>
+    `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+  const dates =
     period === "year"
-      ? monthLabels.map(
-          (_, index) =>
-            `2026-${String(index + 1).padStart(2, "0")}-${new Date(2026, index + 1, 0).getDate()}`,
-        )
-      : days.map(
-          (day) =>
-            `2026-${String(selectedMonth).padStart(2, "0")}-${String(day).padStart(2, "0")}`,
-        );
+      ? monthLabels.map((_, index) => new Date(selectedYear, index + 1, 0))
+      : period === "week"
+        ? Array.from(
+            { length: 7 },
+            (_, index) =>
+              new Date(
+                selectedYear,
+                selectedMonth - 1,
+                selectedDay - 6 + index,
+              ),
+          )
+        : [1, 5, 10, 15, 20, 25, lastDay].map(
+            (date) => new Date(selectedYear, selectedMonth - 1, date),
+          );
+  const cutoffs = dates.map(formatDate);
   const start =
     period === "year"
-      ? "2026-01-01"
-      : `2026-${String(selectedMonth).padStart(2, "0")}-${period === "week" ? "11" : "01"}`;
+      ? `${selectedYear}-01-01`
+      : period === "week"
+        ? cutoffs[0]
+        : `${selectedYear}-${String(selectedMonth).padStart(2, "0")}-01`;
   const completed = transactions.filter(
     (transaction) =>
       transaction.status === "completed" &&
-      transaction.date >= start &&
+      transaction.date.slice(0, 10) >= start &&
       Number.isFinite(transaction.amount),
   );
   const sum = (type: "income" | "expense", cutoff: string) =>
@@ -172,9 +190,9 @@ function transactionSeries(
     dates:
       period === "year"
         ? monthLabels
-        : days.map(
-            (day) =>
-              `${String(day).padStart(2, "0")} ${monthLabels[selectedMonth - 1]}`,
+        : dates.map(
+            (date) =>
+              `${String(date.getDate()).padStart(2, "0")} ${monthLabels[date.getMonth()]}`,
           ),
     income: cutoffs.map((cutoff) => sum("income", cutoff)),
     expense: cutoffs.map((cutoff) => sum("expense", cutoff)),
@@ -184,11 +202,15 @@ function transactionSeries(
 export function CashFlowChart({
   period,
   transactions,
-  month = 10,
+  month = new Date().getMonth() + 1,
+  year = new Date().getFullYear(),
+  day = new Date().getDate(),
 }: {
   period: Period;
   transactions?: ChartTransaction[];
   month?: number;
+  year?: number;
+  day?: number;
 }) {
   const id = useId().replace(/:/g, "");
   const containerRef = useRef<HTMLDivElement>(null);
@@ -206,7 +228,7 @@ export function CashFlowChart({
   }, []);
   const compact = containerWidth < 450;
   const data = transactions
-    ? transactionSeries(period, transactions, month)
+    ? transactionSeries(period, transactions, month, year, day)
     : series[period];
   const width = compact ? 440 : 720;
   const height = compact ? 240 : 230;
@@ -264,8 +286,8 @@ export function CashFlowChart({
       >
         <defs>
           <linearGradient id={`chart-income-${id}`} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#17a88c" stopOpacity="0.15" />
-            <stop offset="100%" stopColor="#17a88c" stopOpacity="0.005" />
+            <stop offset="0%" stopColor="#5b72df" stopOpacity="0.15" />
+            <stop offset="100%" stopColor="#5b72df" stopOpacity="0.005" />
           </linearGradient>
           <linearGradient
             id={`chart-expense-${id}`}
@@ -323,7 +345,7 @@ export function CashFlowChart({
         <path
           d={incomeLine}
           fill="none"
-          stroke="#10a58a"
+          stroke="#4f67d8"
           strokeWidth="2.7"
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -373,7 +395,7 @@ export function CashFlowChart({
               cx={income[activeIndex].x}
               cy={income[activeIndex].y}
               r="4.5"
-              fill="#10a58a"
+              fill="#4f67d8"
               stroke="white"
               strokeWidth="2.5"
             />
@@ -398,7 +420,7 @@ export function CashFlowChart({
             <text x={tooltipX + 13} y={37} className="chart-tooltip-date">
               {data.dates[activeIndex]}
             </text>
-            <circle cx={tooltipX + 16} cy={53} r="3" fill="#10a58a" />
+            <circle cx={tooltipX + 16} cy={53} r="3" fill="#4f67d8" />
             <text x={tooltipX + 25} y={57} className="chart-tooltip-label">
               Gelir
             </text>

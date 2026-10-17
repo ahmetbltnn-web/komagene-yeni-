@@ -49,17 +49,26 @@ import { CashFlowChart, ExpenseDonut } from "./components/Charts";
 import {
   categories,
   currency,
-  readStored,
+  readFinanceState,
+  persistFinanceState,
   seedAccounts,
   seedContacts,
   seedDueItems,
   seedTransactions,
-  writeStored,
+  exportBackup,
+  parseBackup,
+  type FinanceBackupData,
   type BankAccount,
   type Contact,
   type DueItem,
   type Transaction,
 } from "./lib/finance";
+import {
+  defaultIdentity,
+  defaultWorkspace,
+  initials,
+  localDate,
+} from "./lib/identity";
 
 type Page =
   | "overview"
@@ -75,7 +84,6 @@ type Modal =
   | "due"
   | "settings"
   | "help"
-  | "pro"
   | null;
 type Period = "week" | "month" | "year";
 const navigation = [
@@ -133,19 +141,25 @@ const newId = () =>
   globalThis.crypto?.randomUUID?.() ||
   `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
-function Logo({ compact = false }: { compact?: boolean }) {
+function downloadFile(text: string, filename: string, mime: string) {
+  const url = URL.createObjectURL(new Blob([text], { type: mime }));
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = filename;
+  anchor.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function Logo({ name }: { name: string }) {
   return (
-    <div className="brand">
-      <span className="brand-symbol">
-        <span />
-        <span />
-        <span />
+    <div className="brand mhans-brand">
+      <span className="mhans-symbol">
+        <BarChart3 size={23} strokeWidth={1.8} />
       </span>
-      {!compact && (
-        <span>
-          finova<span className="brand-dot">.</span>
-        </span>
-      )}
+      <span className="brand-wordmark">
+        <strong>{name}</strong>
+        <small>FİNANS YÖNETİMİ</small>
+      </span>
     </div>
   );
 }
@@ -190,21 +204,34 @@ function EmptyState({
 
 function App() {
   const [page, setPage] = useState<Page>("overview");
-  const [transactions, setTransactions] = useState<Transaction[]>(() =>
-    readStored("transactions", seedTransactions),
+  const [initialData] = useState<FinanceBackupData>(() =>
+    readFinanceState({
+      transactions: [],
+      accounts: [],
+      contacts: [],
+      dueItems: [],
+      workspace: defaultWorkspace,
+      profile: defaultIdentity,
+    }),
   );
-  const [accounts, setAccounts] = useState<BankAccount[]>(() =>
-    readStored("accounts", seedAccounts),
+  const [transactions, setTransactions] = useState<Transaction[]>(
+    () => initialData.transactions,
   );
-  const [contacts, setContacts] = useState<Contact[]>(() =>
-    readStored("contacts", seedContacts),
+  const [accounts, setAccounts] = useState<BankAccount[]>(
+    () => initialData.accounts,
   );
-  const [dueItems, setDueItems] = useState<DueItem[]>(() =>
-    readStored("due", seedDueItems),
+  const [contacts, setContacts] = useState<Contact[]>(
+    () => initialData.contacts,
   );
-  const [workspace, setWorkspace] = useState(() =>
-    readStored("workspace", "Yılmaz Tasarım"),
+  const [dueItems, setDueItems] = useState<DueItem[]>(
+    () => initialData.dueItems,
   );
+  const [workspace, setWorkspace] = useState(() => initialData.workspace);
+  const [profile, setProfile] = useState(() => initialData.profile);
+  const [storageError, setStorageError] = useState("");
+  const [restoreCandidate, setRestoreCandidate] =
+    useState<FinanceBackupData | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [modal, setModal] = useState<Modal>(null);
   const [detail, setDetail] = useState<
     Transaction | Contact | BankAccount | null
@@ -217,7 +244,9 @@ function App() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [filter, setFilter] = useState("all");
   const [category, setCategory] = useState("all");
-  const [month, setMonth] = useState(10);
+  const today = localDate();
+  const [month, setMonth] = useState(Number(today.slice(5, 7)));
+  const [year, setYear] = useState(Number(today.slice(0, 4)));
   const [period, setPeriod] = useState<Period>("month");
   const [dueTab, setDueTab] = useState<"expense" | "income">("expense");
   const [type, setType] = useState<"income" | "expense">("income");
@@ -226,20 +255,26 @@ function App() {
   const modalRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    writeStored("transactions", transactions);
-  }, [transactions]);
+    document.title = `${profile.appName} | Finans Yönetimi`;
+  }, [profile]);
+
   useEffect(() => {
-    writeStored("accounts", accounts);
-  }, [accounts]);
-  useEffect(() => {
-    writeStored("contacts", contacts);
-  }, [contacts]);
-  useEffect(() => {
-    writeStored("due", dueItems);
-  }, [dueItems]);
-  useEffect(() => {
-    writeStored("workspace", workspace);
-  }, [workspace]);
+    try {
+      persistFinanceState({
+        transactions,
+        accounts,
+        contacts,
+        dueItems,
+        workspace,
+        profile,
+      });
+      setStorageError("");
+    } catch {
+      setStorageError(
+        "Tarayıcıya kayıt yapılamadı. Bu oturumdaki değişiklikler yalnızca bellekte. Sayfayı kapatmadan önce JSON yedeğinizi indirin.",
+      );
+    }
+  }, [transactions, accounts, contacts, dueItems, workspace, profile]);
   useEffect(() => {
     const listener = (event: KeyboardEvent) => {
       if ((event.metaKey || event.ctrlKey) && event.key === "k") {
@@ -279,7 +314,9 @@ function App() {
         modalRef.current.querySelectorAll<HTMLElement>(
           'button, input, select, textarea, a[href], [tabindex="0"]',
         ),
-      ).filter((el) => !el.hasAttribute("disabled"));
+      ).filter(
+        (el) => !el.hasAttribute("disabled") && el.offsetParent !== null,
+      );
       const first = elements[0],
         last = elements[elements.length - 1];
       if (event.shiftKey && document.activeElement === first) {
@@ -311,11 +348,19 @@ function App() {
   };
   const openModal = (next: Modal) => {
     setFormError("");
+    setRestoreCandidate(null);
+    if (next === "transaction" && !accounts.length) {
+      setModal("account");
+      setToast("İşlem kaydetmeden önce ilk banka hesabınızı ekleyin.");
+      return;
+    }
     setModal(next);
     setType("income");
   };
   const monthTransactions = transactions.filter(
-    (t) => Number(t.date.slice(5, 7)) === month && t.date.startsWith("2026"),
+    (t) =>
+      Number(t.date.slice(5, 7)) === month &&
+      Number(t.date.slice(0, 4)) === year,
   );
   const completed = monthTransactions.filter((t) => t.status === "completed");
   const income = sum(
@@ -326,11 +371,12 @@ function App() {
     completed.filter((t) => t.type === "expense"),
     (t) => t.amount,
   );
+  const previousPeriod = new Date(year, month - 2, 1);
   const previousMonth = transactions.filter(
     (t) =>
       t.status === "completed" &&
-      t.date.startsWith("2026") &&
-      Number(t.date.slice(5, 7)) === month - 1,
+      Number(t.date.slice(0, 4)) === previousPeriod.getFullYear() &&
+      Number(t.date.slice(5, 7)) === previousPeriod.getMonth() + 1,
   );
   const previousIncome = sum(
     previousMonth.filter((t) => t.type === "income"),
@@ -392,6 +438,103 @@ function App() {
         .slice(0, 4)
     : [];
 
+  function backupData(): FinanceBackupData {
+    return { transactions, accounts, contacts, dueItems, workspace, profile };
+  }
+
+  function downloadBackup() {
+    downloadFile(
+      exportBackup(backupData()),
+      `${profile.appName.replace(/[^\p{L}\p{N}]+/gu, "-")}-yedek-${today}.json`,
+      "application/json",
+    );
+    setToast("Tüm kayıtlarınız ve kişisel ayarlarınız yedeklendi.");
+  }
+
+  async function readBackupFile(file: File) {
+    setRestoreCandidate(null);
+    setFormError("");
+    try {
+      if (file.size > 20 * 1024 * 1024)
+        throw new Error("Yedek dosyası 20 MB sınırını aşıyor.");
+      setRestoreCandidate(parseBackup(await file.text()));
+    } catch (error) {
+      setFormError(error instanceof Error ? error.message : "Yedek okunamadı.");
+    }
+  }
+
+  function restoreBackup() {
+    if (!restoreCandidate) return;
+    if (
+      transactions.length ||
+      accounts.length ||
+      contacts.length ||
+      dueItems.length
+    ) {
+      downloadFile(
+        exportBackup(backupData()),
+        `${profile.appName.replace(/[^\p{L}\p{N}]+/gu, "-")}-geri-yukleme-oncesi-${today}.json`,
+        "application/json",
+      );
+    }
+    try {
+      persistFinanceState(restoreCandidate);
+    } catch {
+      setFormError(
+        "Yedek tarayıcıya kaydedilemedi; depolama alanı dolu veya erişim kapalı olabilir. Mevcut kayıtlarınız değiştirilmedi.",
+      );
+      return;
+    }
+    setTransactions(restoreCandidate.transactions);
+    setAccounts(restoreCandidate.accounts);
+    setContacts(restoreCandidate.contacts);
+    setDueItems(restoreCandidate.dueItems);
+    setWorkspace(restoreCandidate.workspace);
+    setProfile(restoreCandidate.profile);
+    setRestoreCandidate(null);
+    setModal(null);
+    navigate("overview");
+    setToast(
+      "Yedeğiniz geri yüklendi. Önceki kayıtlar varsa ayrı bir yedek olarak indirildi.",
+    );
+  }
+
+  function loadExamples() {
+    if (
+      transactions.length ||
+      accounts.length ||
+      contacts.length ||
+      dueItems.length
+    )
+      return;
+    setTransactions(seedTransactions);
+    setAccounts(seedAccounts);
+    setContacts(seedContacts);
+    setDueItems(seedDueItems);
+    setMonth(10);
+    setYear(2026);
+    setModal(null);
+    setToast(
+      "Örnek kayıtlar yüklendi. Bu veriler gerçek finansal bilgileriniz değildir.",
+    );
+  }
+
+  function saveSettings(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const values = new FormData(event.currentTarget);
+    const appName = String(values.get("appName")).trim();
+    const ownerName = String(values.get("ownerName")).trim();
+    const company = String(values.get("workspace")).trim();
+    if (!appName || !ownerName || !company) {
+      setFormError("Uygulama, firma ve kullanıcı adları boş bırakılamaz.");
+      return;
+    }
+    setWorkspace(company);
+    setProfile({ appName, ownerName });
+    setModal(null);
+    setToast("Firma ve kişisel ayarlarınız kaydedildi.");
+  }
+
   function applyBalance(account: string, amount: number) {
     setAccounts((current) =>
       current.map((a) =>
@@ -403,6 +546,10 @@ function App() {
   function saveTransaction(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
+    if (!String(data.get("name")).trim()) {
+      setFormError("İşlem adı boş bırakılamaz.");
+      return;
+    }
     const amount = Number(data.get("amount"));
     if (!Number.isFinite(amount) || amount <= 0) {
       setFormError("Lütfen sıfırdan büyük, geçerli bir tutar girin.");
@@ -428,6 +575,7 @@ function App() {
     setTransactions((current) => [item, ...current]);
     applyBalance(item.account, amount * (type === "income" ? 1 : -1));
     setMonth(Number(item.date.slice(5, 7)));
+    setYear(Number(item.date.slice(0, 4)));
     setModal(null);
     setToast(
       `${type === "income" ? "Gelir" : "Gider"} kaydı eklendi. Hesap bakiyeniz güncellendi.`,
@@ -438,6 +586,16 @@ function App() {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
     const bank = String(data.get("bank")).trim();
+    if (
+      !bank ||
+      !String(data.get("name")).trim() ||
+      !Number.isFinite(Number(data.get("balance")))
+    ) {
+      setFormError(
+        "Banka ve hesap adını, geçerli bir açılış bakiyesiyle birlikte girin.",
+      );
+      return;
+    }
     if (
       accounts.some(
         (a) => a.bank.toLocaleLowerCase("tr") === bank.toLocaleLowerCase("tr"),
@@ -466,6 +624,10 @@ function App() {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
     const company = String(data.get("company")).trim();
+    if (!company || !String(data.get("name")).trim()) {
+      setFormError("Firma adı ve yetkili kişi boş bırakılamaz.");
+      return;
+    }
     setContacts((current) => [
       ...current,
       {
@@ -492,6 +654,10 @@ function App() {
   function saveDue(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
+    if (!String(data.get("name")).trim()) {
+      setFormError("Planlanan işlem adı boş bırakılamaz.");
+      return;
+    }
     const amount = Number(data.get("amount"));
     if (!Number.isFinite(amount) || amount <= 0) {
       setFormError("Lütfen geçerli bir tutar girin.");
@@ -516,6 +682,13 @@ function App() {
 
   function completeDue(item: DueItem) {
     if (item.status === "completed") return;
+    if (!accounts.length) {
+      openModal("account");
+      setToast(
+        "Ödeme veya tahsilatı tamamlamak için önce banka hesabınızı ekleyin.",
+      );
+      return;
+    }
     const contact = contacts.find((c) => c.company === item.name);
     const balanceField = item.type === "income" ? "receivable" : "payable";
     const contactAdjustment = contact
@@ -529,7 +702,7 @@ function App() {
     const transaction: Transaction = {
       ...item,
       id: newId(),
-      date: "2026-10-17",
+      date: today,
       status: "completed",
       category: item.type === "income" ? "Hizmet" : "Fatura",
       account: accounts[0]?.bank || "",
@@ -625,7 +798,7 @@ function App() {
     );
     const link = document.createElement("a");
     link.href = url;
-    link.download = `Finova-${monthNames[month - 1]}-2026.csv`;
+    link.download = `${profile.appName.replace(/[^\p{L}\p{N}]+/gu, "-")}-${monthNames[month - 1]}-${year}.csv`;
     link.click();
     URL.revokeObjectURL(url);
     setToast(`${monthNames[month - 1]} ayı raporunuz CSV olarak indirildi.`);
@@ -677,7 +850,7 @@ function App() {
                 </td>
                 <td className="date-cell">
                   {dateText(item.date)}
-                  <span className="year"> 2026</span>
+                  <span className="year"> {item.date.slice(0, 4)}</span>
                 </td>
                 <td className={`amount ${item.type} align-right`}>
                   {item.type === "income" ? "+" : "−"}
@@ -751,6 +924,7 @@ function App() {
         <div className="stat-bottom">
           <span className={`stat-trend ${color === "orange" ? "down" : ""}`}>
             {!neutral &&
+              trend !== "—" &&
               (trend.startsWith("−") ? (
                 <ArrowDownRight size={12} />
               ) : (
@@ -760,6 +934,7 @@ function App() {
           </span>
           <span className="trend-label">{trendLabel}</span>
           <svg
+            style={{ visibility: completed.length ? "visible" : "hidden" }}
             className={`sparkline ${color}`}
             viewBox="0 0 88 28"
             aria-hidden="true"
@@ -857,6 +1032,8 @@ function App() {
           period={period}
           transactions={transactions}
           month={month}
+          year={year}
+          day={Number(today.slice(8, 10))}
         />
       </section>
     );
@@ -893,7 +1070,7 @@ function App() {
         <div className="expense-bottom">
           <span>
             <span className="tiny-dot" />
-            {monthNames[month - 1]} 2026
+            {monthNames[month - 1]} {year}
           </span>
           <span>
             {completed.filter((t) => t.type === "expense").length} gider işlemi
@@ -978,7 +1155,7 @@ function App() {
         <div className="upcoming-note">
           <Clock3 size={14} />
           <span>
-            Bu ay <strong>{pending.length} işleminiz</strong> sizi bekliyor.
+            Toplam <strong>{pending.length} işleminiz</strong> sizi bekliyor.
           </span>
           <ArrowRight size={14} />
         </div>
@@ -1064,16 +1241,17 @@ function App() {
         <button
           className="brand-button"
           onClick={() => navigate("overview")}
-          aria-label="Finova ana sayfa"
+          aria-label={`${profile.appName} ana sayfa`}
         >
-          <Logo />
+          <Logo name={profile.appName} />
         </button>
         <button
           className="workspace-switch"
           onClick={() => openModal("settings")}
         >
           <span className="workspace-avatar">
-            Y<span />
+            {initials(workspace)}
+            <span />
           </span>
           <span>
             <strong>{workspace}</strong>
@@ -1098,20 +1276,20 @@ function App() {
           ))}
         </nav>
         <div className="sidebar-bottom">
-          <div className="pro-card">
-            <span className="pro-icon">
-              <Sparkles size={19} />
+          <div className="ownership-card">
+            <span className="ownership-icon">
+              <ShieldCheck size={19} />
             </span>
-            <h3>Bir adım öne geçin.</h3>
+            <h3>Verileriniz, kontrolünüzde.</h3>
             <p>
-              Daha güçlü raporlar, daha
+              Size ait çalışma alanınız.
               <br />
-              akıllı finansal kararlar.
+              Güvenle yedekleyin, kolayca taşıyın.
             </p>
-            <button onClick={() => openModal("pro")}>
-              Finova Pro'yu keşfet <ArrowUpRight size={15} />
+            <button onClick={downloadBackup}>
+              <Download size={14} /> Verilerimi yedekle
             </button>
-            <span className="pro-decoration" />
+            <span className="ownership-decoration" />
           </div>
           <div className="secondary-nav">
             <button onClick={() => openModal("help")}>
@@ -1128,9 +1306,9 @@ function App() {
             className="user-profile"
             onClick={() => openModal("settings")}
           >
-            <span className="avatar">AY</span>
+            <span className="avatar">{initials(profile.ownerName)}</span>
             <span>
-              <strong>Ahmet Yılmaz</strong>
+              <strong>{profile.ownerName}</strong>
               <small>Hesap yöneticisi</small>
             </span>
             <ChevronDown size={15} />
@@ -1202,7 +1380,7 @@ function App() {
                 aria-label="Bildirimler"
               >
                 <Bell size={20} />
-                {!notificationsRead && <i />}
+                {!notificationsRead && pending.length > 0 && <i />}
               </button>
               {notificationsOpen && (
                 <div className="notifications-panel">
@@ -1248,11 +1426,24 @@ function App() {
               onClick={() => openModal("settings")}
               aria-label="Profil ayarları"
             >
-              AY
+              {initials(profile.ownerName)}
             </button>
           </div>
         </header>
         <main>
+          {storageError && (
+            <div className="storage-error" role="alert">
+              <ShieldCheck size={20} />
+              <p>{storageError}</p>
+              <button
+                className="button button-secondary"
+                onClick={downloadBackup}
+              >
+                <Download size={15} />
+                JSON yedeği indir
+              </button>
+            </div>
+          )}
           <div className="page-heading">
             <div>
               <div className="greeting">
@@ -1271,11 +1462,33 @@ function App() {
                 >
                   {monthNames.map((name, index) => (
                     <option key={name} value={index + 1}>
-                      {index === 9 ? "1 – 31 Ekim 2026" : `${name} 2026`}
+                      {name}
                     </option>
                   ))}
                 </select>
                 <ChevronDown size={13} />
+              </label>
+              <label className="year-select">
+                <select
+                  value={year}
+                  onChange={(e) => setYear(Number(e.target.value))}
+                  aria-label="Rapor yılı"
+                >
+                  {Array.from(
+                    new Set([
+                      year,
+                      ...Array.from(
+                        { length: 7 },
+                        (_, i) => Number(today.slice(0, 4)) - 3 + i,
+                      ),
+                      ...transactions.map((t) => Number(t.date.slice(0, 4))),
+                    ]),
+                  )
+                    .sort((a, b) => b - a)
+                    .map((y) => (
+                      <option key={y}>{y}</option>
+                    ))}
+                </select>
               </label>
               <button
                 className="button button-primary"
@@ -1305,6 +1518,29 @@ function App() {
 
           {page === "overview" && (
             <>
+              {page === "overview" &&
+                !accounts.length &&
+                !transactions.length && (
+                  <section className="welcome-banner">
+                    <div className="welcome-monogram">MH</div>
+                    <div>
+                      <span>{workspace} · BAĞIMSIZ FİNANS YÖNETİMİ</span>
+                      <h2>Hoş geldiniz, {profile.ownerName}.</h2>
+                      <p>
+                        Finansal kontrolünüz burada başlıyor. İlk hesabınızı
+                        ekleyin; gelir, gider ve nakit akışınızı kendi
+                        verilerinizle takip edin.
+                      </p>
+                    </div>
+                    <button
+                      className="button button-primary"
+                      onClick={() => openModal("account")}
+                    >
+                      <Plus size={17} />
+                      İlk hesabımı ekle
+                    </button>
+                  </section>
+                )}
               <Stats />
               <div className="dashboard-grid charts-grid">
                 <CashFlowCard />
@@ -1350,6 +1586,18 @@ function App() {
                   </button>
                 </div>
                 <div className="bank-grid">
+                  {!accounts.length && (
+                    <button
+                      className="add-account-card"
+                      onClick={() => openModal("account")}
+                    >
+                      <span>
+                        <Plus size={24} />
+                      </span>
+                      <strong>İlk banka hesabınızı ekleyin</strong>
+                      <p>Gerçek bakiyelerinizi takip etmeye başlayın.</p>
+                    </button>
+                  )}
                   {accounts.slice(0, 3).map((account) => (
                     <AccountCard key={account.id} account={account} />
                   ))}
@@ -1432,7 +1680,9 @@ function App() {
                   <span>
                     Toplam {filteredTransactions.length} işlem gösteriliyor
                   </span>
-                  <span>{monthNames[month - 1]} 2026</span>
+                  <span>
+                    {monthNames[month - 1]} {year}
+                  </span>
                 </div>
               </section>
             </>
@@ -1477,7 +1727,7 @@ function App() {
                   <strong>Hesaplarınız sizin kontrolünüzde.</strong>
                   <p>
                     Bakiyeler, kaydettiğiniz işlemlerle otomatik güncellenir. Bu
-                    demo banka bağlantısı kurmaz.
+                    hesaplar bankanıza otomatik bağlantı kurmaz.
                   </p>
                 </div>
               </div>
@@ -1655,7 +1905,7 @@ function App() {
                   </div>
                   <span className="schedule-date">
                     <CalendarDays size={16} />
-                    Ekim 2026
+                    Tüm tarihler
                   </span>
                 </div>
                 <div className="schedule-list">
@@ -1745,7 +1995,7 @@ function App() {
                     <div>
                       <h2>Gelir & Gider Özeti</h2>
                       <p>
-                        {monthNames[month - 1]} 2026 finansal performansınız
+                        {monthNames[month - 1]} {year} finansal performansınız
                       </p>
                     </div>
                     <FileText size={20} className="muted" />
@@ -1828,10 +2078,12 @@ function App() {
             </>
           )}
           <footer className="page-footer">
-            <span>© 2026 Finova. Finansınız, kontrolünüzde.</span>
+            <span>
+              © {today.slice(0, 4)} {profile.appName} · {profile.ownerName}
+            </span>
             <span>
               <span className="live-dot" />
-              Demo çalışma alanı <span className="footer-separator">
+              Bağımsız çalışma alanı <span className="footer-separator">
                 ·
               </span>{" "}
               Veriler bu tarayıcıda saklanır
@@ -1856,7 +2108,7 @@ function App() {
           >
             <div className="modal-heading">
               <div>
-                <span className="modal-eyebrow">FINOVA ÇALIŞMA ALANI</span>
+                <span className="modal-eyebrow">{workspace}</span>
                 <h2 id="modal-title">
                   {detail
                     ? "amount" in detail
@@ -1874,9 +2126,7 @@ function App() {
                             ? "Yeni işlem planla"
                             : modal === "settings"
                               ? "Çalışma alanı ayarları"
-                              : modal === "pro"
-                                ? "Finova ile bir adım önde"
-                                : "Size nasıl yardımcı olabiliriz?"}
+                              : "Size nasıl yardımcı olabiliriz?"}
                 </h2>
               </div>
               <button
@@ -1916,7 +2166,7 @@ function App() {
                   İşlem adı
                   <input
                     name="name"
-                    placeholder="Örn. Atlas Yazılım proje ödemesi"
+                    placeholder="Örn. Müşteri ödemesi veya kira gideri"
                     required
                     maxLength={80}
                   />
@@ -1938,11 +2188,7 @@ function App() {
                     <input
                       name="date"
                       type="date"
-                      defaultValue={
-                        modal === "due" ? "2026-10-20" : "2026-10-17"
-                      }
-                      min="2026-01-01"
-                      max="2026-12-31"
+                      defaultValue={today}
                       required
                     />
                   </label>
@@ -2070,7 +2316,7 @@ function App() {
                     Firma adı
                     <input
                       name="company"
-                      placeholder="Örn. Atlas Yazılım"
+                      placeholder="Müşteri veya tedarikçi firma adı"
                       required
                       maxLength={60}
                     />
@@ -2125,6 +2371,11 @@ function App() {
                     />
                   </label>
                 </div>
+                {formError && (
+                  <p className="form-error" role="alert">
+                    {formError}
+                  </p>
+                )}
                 <div className="modal-actions">
                   <button
                     type="button"
@@ -2141,55 +2392,144 @@ function App() {
               </form>
             )}
             {modal === "settings" && (
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  setWorkspace(
-                    String(
-                      new FormData(e.currentTarget).get("workspace"),
-                    ).trim(),
-                  );
-                  setModal(null);
-                  setToast("Çalışma alanı ayarlarınız kaydedildi.");
-                }}
-              >
+              <form onSubmit={saveSettings}>
                 <p className="modal-intro">
-                  Çalışma alanınızı işletmenize göre kişiselleştirin.
+                  {workspace} için bağımsız finans çalışma alanınızı yönetin.
                 </p>
                 <label className="form-field">
-                  İşletme adı
+                  Uygulama adı
                   <input
-                    name="workspace"
-                    defaultValue={workspace}
+                    name="appName"
+                    defaultValue={profile.appName}
                     required
                     maxLength={40}
                   />
                 </label>
                 <div className="form-row">
                   <label className="form-field">
-                    Para birimi
-                    <select defaultValue="TRY">
-                      <option value="TRY">Türk Lirası (₺)</option>
-                    </select>
+                    Firma adı
+                    <input
+                      name="workspace"
+                      defaultValue={workspace}
+                      required
+                      maxLength={60}
+                    />
                   </label>
                   <label className="form-field">
-                    Dil
-                    <select defaultValue="tr">
-                      <option value="tr">Türkçe</option>
-                    </select>
+                    Adınız ve soyadınız
+                    <input
+                      name="ownerName"
+                      defaultValue={profile.ownerName}
+                      required
+                      maxLength={60}
+                    />
                   </label>
                 </div>
                 <div className="settings-info">
                   <ShieldCheck size={21} />
                   <div>
-                    <strong>Verileriniz bu cihazda</strong>
+                    <strong>Bağımsız kurulum, size ait veriler</strong>
                     <p>
-                      Bu uygulama örnek verilerle çalışır. Kayıtlarınız bu
-                      tarayıcının yerel deposunda tutulur. Yedek almak için
-                      raporlarınızı indirin.
+                      Üyelik veya abonelik gerekmez. Kayıtlar bu tarayıcıda
+                      tutulur. Başka bir cihazda kullanmak için JSON yedeğinizi
+                      alıp geri yükleyin.
                     </p>
                   </div>
                 </div>
+                <section className="backup-section" aria-label="Veri yedekleme">
+                  <h3>Veri yedekleme & taşıma</h3>
+                  <p>
+                    İşlemleriniz, hesaplarınız ve kişisel ayarlarınız tek
+                    dosyada.
+                  </p>
+                  <div className="backup-actions">
+                    <button
+                      type="button"
+                      className="button button-secondary"
+                      onClick={downloadBackup}
+                    >
+                      <Download size={16} />
+                      JSON yedeği indir
+                    </button>
+                    <button
+                      type="button"
+                      className="button button-secondary"
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      <ArrowUpRight size={16} />
+                      Yedekten geri yükle
+                    </button>
+                  </div>
+                  <input
+                    className="sr-only"
+                    type="file"
+                    tabIndex={-1}
+                    accept="application/json,.json"
+                    aria-label="JSON yedek dosyası"
+                    ref={fileInputRef}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) void readBackupFile(file);
+                      e.target.value = "";
+                    }}
+                  />
+                  {restoreCandidate && (
+                    <div className="restore-preview">
+                      <strong>
+                        Yedek doğrulandı · {restoreCandidate.workspace}
+                      </strong>
+                      <p>
+                        {restoreCandidate.transactions.length} işlem ·{" "}
+                        {restoreCandidate.accounts.length} banka hesabı ·{" "}
+                        {restoreCandidate.contacts.length} cari hesap ·{" "}
+                        {restoreCandidate.dueItems.length} planlı işlem
+                      </p>
+                      <p>
+                        Geri yükleme mevcut kayıtların yerini alır. Mevcut
+                        verileriniz önce ayrı bir dosya olarak indirilir.
+                      </p>
+                      <div>
+                        <button
+                          type="button"
+                          className="button button-secondary"
+                          onClick={() => setRestoreCandidate(null)}
+                        >
+                          Vazgeç
+                        </button>
+                        <button
+                          type="button"
+                          className="button button-primary"
+                          onClick={restoreBackup}
+                        >
+                          Yedeği geri yükle
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                  {formError && (
+                    <p className="form-error" role="alert">
+                      {formError}
+                    </p>
+                  )}
+                </section>
+                {!transactions.length &&
+                  !accounts.length &&
+                  !contacts.length &&
+                  !dueItems.length && (
+                    <div className="example-data-option">
+                      <p>
+                        Önce özellikleri denemek isterseniz kurgusal kayıtlar
+                        yükleyebilirsiniz.
+                      </p>
+                      <button
+                        type="button"
+                        className="text-button"
+                        onClick={loadExamples}
+                      >
+                        Örnek verilerle keşfet <ArrowRight size={14} />
+                      </button>
+                    </div>
+                  )}
                 <div className="modal-actions">
                   <button
                     type="button"
@@ -2208,7 +2548,7 @@ function App() {
             {modal === "help" && (
               <div className="help-content">
                 <p className="modal-intro">
-                  Finova'yı kullanmaya başlamak çok kolay.
+                  Çalışma alanınızı kendi bilgilerinizle kullanmaya başlayın.
                 </p>
                 {[
                   [
@@ -2225,7 +2565,7 @@ function App() {
                   ],
                   [
                     "Verilerim nerede saklanıyor?",
-                    "Bu demo, kayıtlarınızı kullandığınız tarayıcıda saklar. Canlı banka bağlantısı veya cihazlar arasında senkronizasyon içermez.",
+                    "Kayıtlarınız bu tarayıcıda saklanır. Ayarlar bölümünden tüm verilerinizi JSON olarak yedekleyebilir ve başka bir tarayıcıda geri yükleyebilirsiniz. Canlı banka bağlantısı içermez.",
                   ],
                 ].map(([q, a]) => (
                   <details key={q}>
@@ -2241,46 +2581,6 @@ function App() {
                   onClick={() => setModal(null)}
                 >
                   Anladım, başlayalım <ArrowRight size={16} />
-                </button>
-              </div>
-            )}
-            {modal === "pro" && (
-              <div className="pro-modal-content">
-                <span className="pro-modal-icon">
-                  <Sparkles size={32} />
-                </span>
-                <p>Finansal kararlarınıza daha fazla güç katın.</p>
-                <ul>
-                  <li>
-                    <Check size={17} />
-                    Gelişmiş finansal raporlar
-                  </li>
-                  <li>
-                    <Check size={17} />
-                    Birden fazla çalışma alanı
-                  </li>
-                  <li>
-                    <Check size={17} />
-                    Ekip üyeleri ve yetkilendirme
-                  </li>
-                  <li>
-                    <Check size={17} />
-                    Otomatik banka entegrasyonları
-                  </li>
-                </ul>
-                <div className="coming-soon">
-                  <span className="live-dot" />
-                  Yakında Finova'da
-                </div>
-                <p className="muted">
-                  Şu anda demo sürümü kullanıyorsunuz. Mevcut finans takip
-                  özelliklerini ücretsiz keşfedebilirsiniz.
-                </p>
-                <button
-                  className="button button-primary full-width"
-                  onClick={() => setModal(null)}
-                >
-                  Keşfetmeye devam et <ArrowRight size={16} />
                 </button>
               </div>
             )}

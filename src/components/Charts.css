@@ -27,7 +27,7 @@
   outline: none;
 }
 .chart-hit-area:focus-visible {
-  stroke: #9ed9cb;
+  stroke: #b4bfef;
   stroke-width: 1;
   stroke-dasharray: 3 4;
 }
